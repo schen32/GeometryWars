@@ -9,7 +9,6 @@ int main()
 
     sf::CircleShape shape(200.0f);
     shape.setFillColor(sf::Color::Green);
-    shape.setPosition({ 200, 200 });
 
     while (window.isOpen())
     {
