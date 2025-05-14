@@ -57,3 +57,27 @@ public:
 	CScore(int s)
 		: score(s) {}
 };
+
+class CLifespan : public Component
+{
+public:
+	int lifespan = 0;
+	int remaining = 0;
+
+	CLifespan() = default;
+	CLifespan(int totalLifespan)
+		: lifespan(totalLifespan), remaining(totalLifespan) {}
+};
+
+class CInput : public Component
+{
+public:
+	bool up = false;
+	bool left = false;
+	bool right = false;
+	bool down = false;
+	bool shoot = false;
+
+	CInput() = default;
+};
+
