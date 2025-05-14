@@ -37,3 +37,23 @@ public:
 	}
 
 };
+
+class CCollision : public Component
+{
+public:
+	float radius = 0;
+
+	CCollision() = default;
+	CCollision(float r)
+		: radius(r) {}
+};
+
+class CScore : public Component
+{
+public:
+	int score = 0;
+
+	CScore() = default;
+	CScore(int s)
+		: score(s) {}
+};
