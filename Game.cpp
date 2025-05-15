@@ -78,7 +78,7 @@ void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity)
 void Game::sMovement()
 {
 	auto& transform = player()->get<CTransform>();
-	transform.pos = transform.velocity;
+	transform.pos += transform.velocity;
 }
 
 void Game::sLifespan()
@@ -125,12 +125,13 @@ void Game::sUserInput()
 {
 	while (const std::optional event = m_window.pollEvent())
 	{
-		ImGui::SFML::ProcessEvent(m_window, event);
-
+		ImGui::SFML::ProcessEvent(m_window, *event);
+		
 		if (event->is<sf::Event::Closed>())
 		{
 			m_running = false;
 		}
+
 		if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>())
 		{
 			switch (keyPressed->scancode)
@@ -141,6 +142,7 @@ void Game::sUserInput()
 			default: break;
 			}
 		}
+
 		if (const auto* keyReleased = event->getIf<sf::Event::KeyReleased>())
 		{
 			switch (keyReleased->scancode)
@@ -151,6 +153,7 @@ void Game::sUserInput()
 			default: break;
 			}
 		}
+
 		if (const auto* mousePressed = event->getIf<sf::Event::MouseButtonPressed>())
 		{
 			if (ImGui::GetIO().WantCaptureMouse) { continue; }
@@ -158,10 +161,10 @@ void Game::sUserInput()
 			switch (mousePressed->button)
 			{
 			case sf::Mouse::Button::Left:
-				print("Left mouse button clicked");
+				std::cout << "Left mouse button clicked" << std::endl;
 				break;
 			case sf::Mouse::Button::Right:
-				print("Right mouse button clicked");
+				std::cout << "Right mouse button clicked" << std::endl;
 				break;
 			default: break;
 			}
@@ -169,7 +172,8 @@ void Game::sUserInput()
 	}
 }
 
-void print(const std::string& message)
+void Game::setPaused(bool paused)
 {
-	std::cout << message << std::endl;
+	m_paused = paused;
+	m_running = !paused;
 }
