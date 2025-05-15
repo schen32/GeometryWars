@@ -18,7 +18,7 @@ class EntityManager
 			(
 				vec.begin(),
 				vec.end(),
-				[](const std::shared_ptr<Entity>& entity)
+				[](const std::shared_ptr<Entity> entity)
 				{
 					return !entity->isActive();
 				}
