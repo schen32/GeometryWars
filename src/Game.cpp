@@ -20,7 +20,7 @@ void Game::init(const std::string& path)
 	// int SR, CR, FR, FG, FB, OR, OG, OB, OT, V; float S
 	m_playerConfig = { 32, 32, 100, 100, 100, 250, 250, 250, 4, 6, 5.0f };
 	// int SR, CR, FR, FG, FB, OR, OG, OB, OT, V, L; float S
-	m_bulletConfig = { 6, 6, 250, 250, 250, 250, 250, 250, 2, 12, 2, 10.0f };
+	m_bulletConfig = { 6, 6, 250, 250, 250, 250, 250, 250, 2, 12, 100, 10.0f };
 
 	spawnPlayer();
 }
@@ -87,6 +87,7 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2f& target)
 		sf::Color(m_bulletConfig.FR, m_bulletConfig.FG, m_bulletConfig.FB),
 		sf::Color(m_bulletConfig.OR, m_bulletConfig.OG, m_bulletConfig.OB),
 		m_bulletConfig.OT);
+	bullet->add<CLifespan>(m_bulletConfig.L);
 }
 
 void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity)
@@ -108,6 +109,12 @@ void Game::sMovement()
 	if (playerTransform.velocity.x != 0 && playerTransform.velocity.y != 0) {
 		float length = playerTransform.velocity.length();
 		playerTransform.velocity = (playerTransform.velocity / length) * m_playerConfig.S;
+	}
+
+	for (auto& entity : m_entities.getEntities())
+	{
+		auto& entityTransform = entity->get<CTransform>();
+		entityTransform.pos += entityTransform.velocity;
 	}
 }
 
@@ -142,11 +149,30 @@ void Game::sRender()
 		auto& entityTransform = entity->get<CTransform>();
 		auto& entityShape = entity->get<CShape>();
 
-		entityTransform.pos += entityTransform.velocity;
-
 		entityShape.circle.setPosition(entityTransform.pos);
 		entityTransform.angle += 1.0f;
 		entityShape.circle.setRotation(sf::degrees(entityTransform.angle));
+
+		if (entity->has<CLifespan>())
+		{
+			auto& entityLifespan = entity->get<CLifespan>();
+
+			sf::Color curFillColor = entityShape.circle.getFillColor();
+			sf::Color curOutlineColor = entityShape.circle.getOutlineColor();
+
+			float lifespanRatio = (float)entityLifespan.remaining / (float)entityLifespan.lifespan;
+			curFillColor.a = lifespanRatio * 255;
+			curOutlineColor.a = lifespanRatio * 255;
+
+			entityShape.circle.setFillColor(curFillColor);
+			entityShape.circle.setOutlineColor(curOutlineColor);
+
+			entityLifespan.remaining--;
+			if (entityLifespan.remaining <= 0)
+			{
+				entity->destroy();
+			}
+		}
 
 		m_window.draw(entityShape.circle);
 	}
