@@ -72,5 +72,104 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2f& target)
 
 void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity)
 {
+	
+}
 
+void Game::sMovement()
+{
+	auto& transform = player()->get<CTransform>();
+	transform.pos = transform.velocity;
+}
+
+void Game::sLifespan()
+{
+
+}
+
+void Game::sCollision()
+{
+
+}
+
+void Game::sEnemySpawner()
+{
+
+}
+
+void Game::sGUI()
+{
+	ImGui::Begin("Geometry Wars");
+	ImGui::Text("Stuff Goes Here");
+	ImGui::End();
+}
+
+void Game::sRender()
+{
+	m_window.clear();
+
+	auto& playerTransform = player()->get<CTransform>();
+	auto& playerShape = player()->get<CShape>();
+
+	playerShape.circle.setPosition(playerTransform.pos);
+	playerTransform.angle += 1.0f;
+	playerShape.circle.setRotation(sf::radians(playerTransform.angle));
+
+	m_window.draw(playerShape.circle);
+
+	ImGui::SFML::Render(m_window);
+
+	m_window.display();
+}
+
+void Game::sUserInput()
+{
+	while (const std::optional event = m_window.pollEvent())
+	{
+		ImGui::SFML::ProcessEvent(m_window, event);
+
+		if (event->is<sf::Event::Closed>())
+		{
+			m_running = false;
+		}
+		if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>())
+		{
+			switch (keyPressed->scancode)
+			{
+			case sf::Keyboard::Scancode::Escape:
+				m_window.close();
+				break;
+			default: break;
+			}
+		}
+		if (const auto* keyReleased = event->getIf<sf::Event::KeyReleased>())
+		{
+			switch (keyReleased->scancode)
+			{
+			case sf::Keyboard::Scancode::Escape:
+				m_window.close();
+				break;
+			default: break;
+			}
+		}
+		if (const auto* mousePressed = event->getIf<sf::Event::MouseButtonPressed>())
+		{
+			if (ImGui::GetIO().WantCaptureMouse) { continue; }
+
+			switch (mousePressed->button)
+			{
+			case sf::Mouse::Button::Left:
+				print("Left mouse button clicked");
+				break;
+			case sf::Mouse::Button::Right:
+				print("Right mouse button clicked");
+				break;
+			default: break;
+			}
+		}
+	}
+}
+
+void print(const std::string& message)
+{
+	std::cout << message << std::endl;
 }
