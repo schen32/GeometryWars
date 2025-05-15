@@ -18,7 +18,9 @@ void Game::init(const std::string& path)
 	ImGui::GetIO().FontGlobalScale = 2.0f;
 
 	// int SR, CR, FR, FG, FB, OR, OG, OB, OT, V; float S
-	m_playerConfig = { 32, 32, 10, 10, 10, 255, 0, 0, 4, 4, 2.5f };
+	m_playerConfig = { 32, 32, 100, 100, 100, 250, 250, 250, 4, 6, 5.0f };
+	// int SR, CR, FR, FG, FB, OR, OG, OB, OT, V, L; float S
+	m_bulletConfig = { 6, 6, 250, 250, 250, 250, 250, 250, 2, 12, 2, 10.0f };
 
 	spawnPlayer();
 }
@@ -74,7 +76,17 @@ void Game::spawnSmallEnemies(std::shared_ptr<Entity> entity)
 
 void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2f& target)
 {
+	auto bullet = m_entities.addEntity("bullet");
+	auto& entityTransform = entity->get<CTransform>();
 
+	Vec2f bulletVelocity = target - entityTransform.pos;
+	bulletVelocity = (bulletVelocity / bulletVelocity.length()) * m_bulletConfig.S;
+
+	bullet->add<CTransform>(entityTransform.pos, bulletVelocity, entityTransform.angle);
+	bullet->add<CShape>(m_bulletConfig.SR, m_bulletConfig.V,
+		sf::Color(m_bulletConfig.FR, m_bulletConfig.FG, m_bulletConfig.FB),
+		sf::Color(m_bulletConfig.OR, m_bulletConfig.OG, m_bulletConfig.OB),
+		m_bulletConfig.OT);
 }
 
 void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity)
@@ -97,8 +109,6 @@ void Game::sMovement()
 		float length = playerTransform.velocity.length();
 		playerTransform.velocity = (playerTransform.velocity / length) * m_playerConfig.S;
 	}
-
-	playerTransform.pos += playerTransform.velocity;
 }
 
 void Game::sLifespan()
@@ -127,14 +137,19 @@ void Game::sRender()
 {
 	m_window.clear();
 
-	auto& playerTransform = player()->get<CTransform>();
-	auto& playerShape = player()->get<CShape>();
+	for (auto& entity : m_entities.getEntities())
+	{
+		auto& entityTransform = entity->get<CTransform>();
+		auto& entityShape = entity->get<CShape>();
 
-	playerShape.circle.setPosition(playerTransform.pos);
-	playerTransform.angle += 1.0f;
-	playerShape.circle.setRotation(sf::degrees(playerTransform.angle));
+		entityTransform.pos += entityTransform.velocity;
 
-	m_window.draw(playerShape.circle);
+		entityShape.circle.setPosition(entityTransform.pos);
+		entityTransform.angle += 1.0f;
+		entityShape.circle.setRotation(sf::degrees(entityTransform.angle));
+
+		m_window.draw(entityShape.circle);
+	}
 
 	ImGui::SFML::Render(m_window);
 
@@ -152,10 +167,9 @@ void Game::sUserInput()
 			m_running = false;
 		}
 		
+		auto& playerInput = player()->get<CInput>();
 		if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>())
 		{
-			auto& playerInput = player()->get<CInput>();
-
 			switch (keyPressed->scancode)
 			{
 			case sf::Keyboard::Scancode::Escape:
@@ -179,8 +193,6 @@ void Game::sUserInput()
 
 		if (const auto* keyReleased = event->getIf<sf::Event::KeyReleased>())
 		{
-			auto& playerInput = player()->get<CInput>();
-
 			switch (keyReleased->scancode)
 			{
 			case sf::Keyboard::Scancode::Escape:
@@ -206,12 +218,12 @@ void Game::sUserInput()
 		{
 			if (ImGui::GetIO().WantCaptureMouse) { continue; }
 
-			auto& playerInput = player()->get<CInput>();
-
 			switch (mousePressed->button)
 			{
 			case sf::Mouse::Button::Left:
 				playerInput.shoot = true;
+				spawnBullet(player(),
+					Vec2f(mousePressed->position.x, mousePressed->position.y));
 				break;
 			case sf::Mouse::Button::Right:
 				std::cout << "Right mouse button clicked" << std::endl;
@@ -223,8 +235,6 @@ void Game::sUserInput()
 		if (const auto* mouseReleased = event->getIf<sf::Event::MouseButtonReleased>())
 		{
 			if (ImGui::GetIO().WantCaptureMouse) { continue; }
-
-			auto& playerInput = player()->get<CInput>();
 
 			switch (mouseReleased->button)
 			{
