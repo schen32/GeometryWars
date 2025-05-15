@@ -44,6 +44,7 @@ void Game::run()
 
 		m_currentFrame++;
 	}
+	m_window.close();
 }
 
 void Game::spawnPlayer()
@@ -137,7 +138,7 @@ void Game::sUserInput()
 			switch (keyPressed->scancode)
 			{
 			case sf::Keyboard::Scancode::Escape:
-				m_window.close();
+				m_running = false;
 				break;
 			default: break;
 			}
@@ -148,7 +149,7 @@ void Game::sUserInput()
 			switch (keyReleased->scancode)
 			{
 			case sf::Keyboard::Scancode::Escape:
-				m_window.close();
+				m_running = false;
 				break;
 			default: break;
 			}

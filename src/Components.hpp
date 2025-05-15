@@ -35,7 +35,6 @@ public:
 		circle.setOutlineThickness(thickness);
 		circle.setOrigin({ radius, radius });
 	}
-
 };
 
 class CCollision : public Component
