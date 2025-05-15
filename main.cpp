@@ -1,10 +1,10 @@
 #include <SFML/Graphics.hpp>
 
-#include "imgui.h"
-#include "imgui-SFML.h"
+#include "game.h"
 
 int main()
 {
+    /*
     sf::RenderWindow window(sf::VideoMode({ 1280, 720 }), "SFML works!");
 
     sf::CircleShape shape(200.0f);
@@ -22,4 +22,8 @@ int main()
         window.draw(shape);
         window.display();
     }
+    */
+
+    Game g("config.txt");
+    g.run();
 }
