@@ -9,7 +9,7 @@ Game::Game(const std::string& config)
 
 void Game::init(const std::string& path)
 {
-	m_window.create(sf::VideoMode({ 1280, 720 }), "Assignment 2");
+	m_window.create(sf::VideoMode({ 1600, 800 }), "Assignment 2");
 	m_window.setFramerateLimit(60);
 
 	ImGui::SFML::Init(m_window);
@@ -17,6 +17,7 @@ void Game::init(const std::string& path)
 	ImGui::GetStyle().ScaleAllSizes(2.0f);
 	ImGui::GetIO().FontGlobalScale = 2.0f;
 
+	// int SR, CR, FR, FG, FB, OR, OG, OB, OT, V; float S
 	m_playerConfig = { 32, 32, 10, 10, 10, 255, 0, 0, 4, 4, 2.5f };
 
 	spawnPlayer();
@@ -87,14 +88,15 @@ void Game::sMovement()
 	auto& playerInput = player()->get<CInput>();
 
 	playerTransform.velocity = { 0.0, 0.0 };
-	if (playerInput.up)
-		playerTransform.velocity.y -= m_playerConfig.S;
-	if (playerInput.left)
-		playerTransform.velocity.x -= m_playerConfig.S;
-	if (playerInput.down)
-		playerTransform.velocity.y += m_playerConfig.S;
-	if (playerInput.right)
-		playerTransform.velocity.x += m_playerConfig.S;
+	if (playerInput.up) playerTransform.velocity.y -= m_playerConfig.S;
+	if (playerInput.left) playerTransform.velocity.x -= m_playerConfig.S;
+	if (playerInput.down) playerTransform.velocity.y += m_playerConfig.S;
+	if (playerInput.right) playerTransform.velocity.x += m_playerConfig.S;
+
+	if (playerTransform.velocity.x != 0 && playerTransform.velocity.y != 0) {
+		float length = playerTransform.velocity.length();
+		playerTransform.velocity = (playerTransform.velocity / length) * m_playerConfig.S;
+	}
 
 	playerTransform.pos += playerTransform.velocity;
 }

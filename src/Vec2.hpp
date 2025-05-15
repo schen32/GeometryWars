@@ -79,11 +79,16 @@ public:
 		y /= val;
 	}
 
-	float dist(const Vec2& rhs) const
+	float distTo(const Vec2& rhs) const
 	{
 		float dx = static_cast<float>(x - rhs.x);
 		float dy = static_cast<float>(y - rhs.y);
 		return std::sqrt(dx * dx + dy * dy);
+	}
+
+	float length() const
+	{
+		return std::sqrt(static_cast<float>(x * x + y * y));
 	}
 };
 
