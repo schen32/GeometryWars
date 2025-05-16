@@ -43,10 +43,13 @@ void Game::run()
 
 		ImGui::SFML::Update(m_window, m_deltaClock.restart());
 
-		sEnemySpawner();
-		sMovement();
-		sLifespan();
-		sCollision();
+		if (!m_paused)
+		{
+			sEnemySpawner();
+			sMovement();
+			sLifespan();
+			sCollision();
+		}
 		sUserInput();
 		sGUI();
 		sRender();
@@ -112,7 +115,7 @@ void Game::spawnSmallEnemies(std::shared_ptr<Entity> entity)
 		Vec2f angleVec = Vec2f(std::cos(angle), std::sin(angle));
 		Vec2f velocity = angleVec * parentTransform.velocity.length();
 
-		enemySmall->add<CTransform>(parentTransform.pos,
+		enemySmall->add<CTransform>(parentTransform.pos + velocity,
 			velocity, 0.0f);
 		enemySmall->add<CShape>(m_enemyConfig.SR / 2, vertices,
 			parentShape.circle.getFillColor(),
@@ -233,6 +236,7 @@ void Game::sCollision()
 		}
 	}
 	auto& playerTransform = player()->get<CTransform>();
+	auto& playerShape = player()->get<CShape>();
 	auto& playerCollision = player()->get<CCollision>();
 	for (auto& enemy : m_entities.getEntities("enemy"))
 	{
@@ -244,6 +248,7 @@ void Game::sCollision()
 			* (enemyCollision.radius + playerCollision.radius))
 		{
 			spawnSmallEnemies(enemy);
+			playerShape.circle.setPointCount(playerShape.circle.getPointCount() - 1);
 		}
 
 		for (auto& otherEnemy : m_entities.getEntities("enemy"))
@@ -346,7 +351,7 @@ void Game::sUserInput()
 			switch (keyPressed->scancode)
 			{
 			case sf::Keyboard::Scancode::Escape:
-				m_running = false;
+				setPaused(!m_paused);
 				break;
 			case sf::Keyboard::Scancode::W:
 				playerInput.up = true;
@@ -369,7 +374,6 @@ void Game::sUserInput()
 			switch (keyReleased->scancode)
 			{
 			case sf::Keyboard::Scancode::Escape:
-				m_running = false;
 				break;
 			case sf::Keyboard::Scancode::W:
 				playerInput.up = false;
@@ -426,5 +430,4 @@ void Game::sUserInput()
 void Game::setPaused(bool paused)
 {
 	m_paused = paused;
-	m_running = !paused;
 }
