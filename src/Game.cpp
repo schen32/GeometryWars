@@ -21,7 +21,7 @@ void Game::init(const std::string& path)
 	// int SR, CR, FR, FG, FB, OR, OG, OB, OT, V; float S
 	m_playerConfig = { 32, 32, 100, 100, 100, 250, 250, 250, 4, 6, 5.0f };
 	// int SR, CR, FR, FG, FB, OR, OG, OB, OT, V, L; float S
-	m_bulletConfig = { 6, 6, 250, 250, 250, 250, 250, 250, 2, 12, 100, 10.0f };
+	m_bulletConfig = { 6, 6, 250, 250, 250, 250, 250, 250, 2, 12, 100, 15.0f };
 	// int SR, CR, OR, OG, OB, OT, VMIN, VMAX, L, SI; float SMIN, SMAX
 	m_enemyConfig = { 40, 40, 250, 10, 10, 3, 3, 7, 60, 120, 2.0f, 6.0f };
 
@@ -118,7 +118,7 @@ void Game::spawnSmallEnemies(std::shared_ptr<Entity> entity)
 			parentShape.circle.getFillColor(),
 			parentShape.circle.getOutlineColor(),
 			m_enemyConfig.OT);
-		// enemySmall->add<CCollision>(m_enemyConfig.CR / 2);
+		enemySmall->add<CCollision>(m_enemyConfig.CR / 2);
 		enemySmall->add<CLifespan>(m_enemyConfig.L);
 	}
 
@@ -199,17 +199,15 @@ void Game::sLifespan()
 
 void Game::sCollision()
 {
-	auto& playerTransform = player()->get<CTransform>();
-	auto& playerCollision = player()->get<CCollision>();
-	for (auto& enemy : m_entities.getEntities("enemy"))
+	for (auto& bullet : m_entities.getEntities("bullet"))
 	{
-		auto& enemyTransform = enemy->get<CTransform>();
-		auto& enemyCollision = enemy->get<CCollision>();
+		auto& bulletTransform = bullet->get<CTransform>();
+		auto& bulletCollision = bullet->get<CCollision>();
 
-		for (auto& bullet : m_entities.getEntities("bullet"))
+		for (auto& enemy : m_entities.getEntities("enemy"))
 		{
-			auto& bulletTransform = bullet->get<CTransform>();
-			auto& bulletCollision = bullet->get<CCollision>();
+			auto& enemyTransform = enemy->get<CTransform>();
+			auto& enemyCollision = enemy->get<CCollision>();
 
 			if (enemyTransform.pos.distToSquared(bulletTransform.pos)
 				< (enemyCollision.radius + bulletCollision.radius)
@@ -218,6 +216,34 @@ void Game::sCollision()
 				spawnSmallEnemies(enemy);
 				bullet->destroy();
 			}
+		}
+
+		for (auto& enemySmall : m_entities.getEntities("enemySmall"))
+		{
+			auto& enemyTransform = enemySmall->get<CTransform>();
+			auto& enemyCollision = enemySmall->get<CCollision>();
+
+			if (enemyTransform.pos.distToSquared(bulletTransform.pos)
+				< (enemyCollision.radius + bulletCollision.radius)
+				* (enemyCollision.radius + bulletCollision.radius))
+			{
+				enemySmall->destroy();
+				bullet->destroy();
+			}
+		}
+	}
+	auto& playerTransform = player()->get<CTransform>();
+	auto& playerCollision = player()->get<CCollision>();
+	for (auto& enemy : m_entities.getEntities("enemy"))
+	{
+		auto& enemyTransform = enemy->get<CTransform>();
+		auto& enemyCollision = enemy->get<CCollision>();
+
+		if (enemyTransform.pos.distToSquared(playerTransform.pos)
+			< (enemyCollision.radius + playerCollision.radius)
+			* (enemyCollision.radius + playerCollision.radius))
+		{
+			spawnSmallEnemies(enemy);
 		}
 
 		for (auto& otherEnemy : m_entities.getEntities("enemy"))
@@ -231,10 +257,15 @@ void Game::sCollision()
 				< (enemyCollision.radius + otherEnemyCollision.radius)
 				* (enemyCollision.radius + otherEnemyCollision.radius))
 			{
-				spawnSmallEnemies(enemy);
 				spawnSmallEnemies(otherEnemy);
 			}
 		}
+	}
+
+	for (auto& enemy : m_entities.getEntities("enemySmall"))
+	{
+		auto& enemyTransform = enemy->get<CTransform>();
+		auto& enemyCollision = enemy->get<CCollision>();
 
 		if (enemyTransform.pos.distToSquared(playerTransform.pos)
 			< (enemyCollision.radius + playerCollision.radius)
@@ -242,16 +273,22 @@ void Game::sCollision()
 		{
 			enemy->destroy();
 		}
+	}
 
-		if (enemyTransform.pos.x <= enemyCollision.radius ||
-			enemyTransform.pos.x >= m_windowConfig.fW - enemyCollision.radius)
+	// entities bounce off walls
+	for (auto& entity : m_entities.getEntities())
+	{
+		auto& entityTransform = entity->get<CTransform>();
+		auto& entityCollision = entity->get<CCollision>();
+		if (entityTransform.pos.x <= entityCollision.radius ||
+			entityTransform.pos.x >= m_windowConfig.fW - entityCollision.radius)
 		{
-			enemyTransform.velocity.x *= -1;
+			entityTransform.velocity.x *= -1;
 		}
-		if (enemyTransform.pos.y <= enemyCollision.radius ||
-			enemyTransform.pos.y >= m_windowConfig.fH - enemyCollision.radius)
+		if (entityTransform.pos.y <= entityCollision.radius ||
+			entityTransform.pos.y >= m_windowConfig.fH - entityCollision.radius)
 		{
-			enemyTransform.velocity.y *= -1;
+			entityTransform.velocity.y *= -1;
 		}
 	}
 }
