@@ -1,6 +1,7 @@
 #include "Game.h"
 
 #include <iostream>
+#include <random>
 
 Game::Game(const std::string& config)
 {
@@ -9,8 +10,8 @@ Game::Game(const std::string& config)
 
 void Game::init(const std::string& path)
 {
-	m_window.create(sf::VideoMode({ 1600, 800 }), "Assignment 2");
-	m_window.setFramerateLimit(60);
+	m_window.create(sf::VideoMode({ m_windowConfig.uW, m_windowConfig.uH }), "Assignment 2");
+	m_window.setFramerateLimit(m_windowConfig.FR);
 
 	ImGui::SFML::Init(m_window);
 
@@ -21,6 +22,8 @@ void Game::init(const std::string& path)
 	m_playerConfig = { 32, 32, 100, 100, 100, 250, 250, 250, 4, 6, 5.0f };
 	// int SR, CR, FR, FG, FB, OR, OG, OB, OT, V, L; float S
 	m_bulletConfig = { 6, 6, 250, 250, 250, 250, 250, 250, 2, 12, 100, 10.0f };
+	// int SR, CR, OR, OG, OB, OT, VMIN, VMAX, L, SI; float SMIN, SMAX
+	m_enemyConfig = { 40, 40, 250, 10, 10, 3, 4, 8, 60, 100, 2.0f, 8.0f };
 
 	spawnPlayer();
 }
@@ -57,16 +60,39 @@ void Game::spawnPlayer()
 {
 	auto player = m_entities.addEntity("player");
 
-	player->add<CTransform>(Vec2f(400.0f, 400.0f), Vec2f(0.0f, 0.0f), 0.0f);
+	player->add<CTransform>(Vec2f(m_windowConfig.fW, m_windowConfig.fH) / 2,
+		Vec2f(0.0f, 0.0f), 0.0f);
 	player->add<CShape>(m_playerConfig.SR, m_playerConfig.V,
 		sf::Color(m_playerConfig.FR, m_playerConfig.FG, m_playerConfig.FB),
 		sf::Color(m_playerConfig.OR, m_playerConfig.OG, m_playerConfig.OB),
 		m_playerConfig.OT);
+	player->add<CCollision>(m_playerConfig.CR);
 	player->add<CInput>();
 }
 
 void Game::spawnEnemy()
 {
+	// Create random device and seed generator
+	std::random_device rd;
+	std::mt19937 gen(rd());
+
+	// Create distributions with different names
+	std::uniform_int_distribution<> xDistrib(0, m_windowConfig.uW);
+	std::uniform_int_distribution<> yDistrib(0, m_windowConfig.uH);
+	std::uniform_real_distribution<float> speedDistrib(-m_enemyConfig.SMAX, m_enemyConfig.SMAX);
+	std::uniform_int_distribution<> verticeDistrib(m_enemyConfig.VMIN, m_enemyConfig.VMAX);
+	std::uniform_int_distribution<> colorDistrib(0, 255);
+
+	auto enemy = m_entities.addEntity("enemy");
+
+	enemy->add<CTransform>(Vec2f(xDistrib(gen), yDistrib(gen)),
+		Vec2f(speedDistrib(gen), speedDistrib(gen)), 0.0f);
+	enemy->add<CShape>(m_enemyConfig.SR, verticeDistrib(gen),
+		sf::Color(colorDistrib(gen), colorDistrib(gen), colorDistrib(gen)),
+		sf::Color(m_enemyConfig.OR, m_enemyConfig.OG, m_enemyConfig.OB),
+		m_enemyConfig.OT);
+	enemy->add<CCollision>(m_enemyConfig.CR);
+
 	m_lastEnemySpawnTime = m_currentFrame;
 }
 
@@ -88,6 +114,7 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2f& target)
 		sf::Color(m_bulletConfig.FR, m_bulletConfig.FG, m_bulletConfig.FB),
 		sf::Color(m_bulletConfig.OR, m_bulletConfig.OG, m_bulletConfig.OB),
 		m_bulletConfig.OT);
+	bullet->add<CCollision>(m_bulletConfig.CR);
 	bullet->add<CLifespan>(m_bulletConfig.L);
 }
 
@@ -148,12 +175,43 @@ void Game::sLifespan()
 
 void Game::sCollision()
 {
+	auto playerTransform = player()->get<CTransform>();
+	auto playerCollision = player()->get<CCollision>();
+	for (auto& enemy : m_entities.getEntities("enemy"))
+	{
+		auto enemyTransform = enemy->get<CTransform>();
+		auto enemyCollision = enemy->get<CCollision>();
 
+		for (auto& bullet : m_entities.getEntities("bullet"))
+		{
+			auto bulletTransform = bullet->get<CTransform>();
+			auto bulletCollision = bullet->get<CCollision>();
+
+			if (enemyTransform.pos.distToSquared(bulletTransform.pos)
+				< (enemyCollision.radius + bulletCollision.radius)
+				* (enemyCollision.radius + bulletCollision.radius))
+			{
+				enemy->destroy();
+				bullet->destroy();
+			}
+		}
+
+		if (enemyTransform.pos.distToSquared(playerTransform.pos)
+			< (enemyCollision.radius + playerCollision.radius)
+			* (enemyCollision.radius + playerCollision.radius))
+		{
+			enemy->destroy();
+			// player()->destroy();
+		}
+	}
 }
 
 void Game::sEnemySpawner()
 {
-
+	if (m_currentFrame - m_lastEnemySpawnTime > m_enemyConfig.SI)
+	{
+		spawnEnemy();
+	}
 }
 
 void Game::sGUI()

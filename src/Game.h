@@ -7,10 +7,13 @@
 struct PlayerConfig { int SR, CR, FR, FG, FB, OR, OG, OB, OT, V; float S; };
 struct EnemyConfig { int SR, CR, OR, OG, OB, OT, VMIN, VMAX, L, SI; float SMIN, SMAX; };
 struct BulletConfig { int SR, CR, FR, FG, FB, OR, OG, OB, OT, V, L; float S; };
+struct WindowConfig { unsigned int FR, uW, uH; float fW, fH; };
 
 class Game
 {
 	sf::RenderWindow m_window;
+	WindowConfig m_windowConfig = { 60, 1600, 800, 1600.0f, 800.0f };
+
 	EntityManager m_entities;
 	sf::Font m_font;
 	// sf::Text m_text;
