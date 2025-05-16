@@ -153,9 +153,21 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2f& target)
 	bullet->add<CLifespan>(m_bulletConfig.L);
 }
 
-void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity)
+void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity, const Vec2f& target)
 {
-	
+	auto& entityTransform = entity->get<CTransform>();
+	Vec2f diff = target - entityTransform.pos;
+	float angle = std::atan2f(diff.y, diff.x);
+
+	Vec2f centerDir(std::cos(angle), std::sin(angle));
+	spawnBullet(entity, entityTransform.pos + centerDir);
+
+	const float SPREAD_ANGLE = 5.0f * (2 * 3.14159 / 360.0f);
+	Vec2f leftDir(std::cos(angle - SPREAD_ANGLE), std::sin(angle - SPREAD_ANGLE));
+	spawnBullet(entity, entityTransform.pos + leftDir);
+
+	Vec2f rightDir(std::cos(angle + SPREAD_ANGLE), std::sin(angle + SPREAD_ANGLE));
+	spawnBullet(entity, entityTransform.pos + rightDir);
 }
 
 void Game::sMovement()
@@ -411,28 +423,12 @@ void Game::sUserInput()
 			switch (mousePressed->button)
 			{
 			case sf::Mouse::Button::Left:
-				playerInput.shoot = true;
 				spawnBullet(player(),
 					Vec2f(mousePressed->position.x, mousePressed->position.y));
 				break;
 			case sf::Mouse::Button::Right:
-				std::cout << "Right mouse button clicked" << std::endl;
-				break;
-			default: break;
-			}
-		}
-
-		if (const auto* mouseReleased = event->getIf<sf::Event::MouseButtonReleased>())
-		{
-			if (ImGui::GetIO().WantCaptureMouse) { continue; }
-
-			switch (mouseReleased->button)
-			{
-			case sf::Mouse::Button::Left:
-				playerInput.shoot = false;
-				break;
-			case sf::Mouse::Button::Right:
-				std::cout << "Right mouse button released" << std::endl;
+				spawnSpecialWeapon(player(),
+					Vec2f(mousePressed->position.x, mousePressed->position.y));
 				break;
 			default: break;
 			}
