@@ -42,6 +42,7 @@ void Game::run()
 
 		sEnemySpawner();
 		sMovement();
+		sLifespan();
 		sCollision();
 		sUserInput();
 		sGUI();
@@ -56,7 +57,7 @@ void Game::spawnPlayer()
 {
 	auto player = m_entities.addEntity("player");
 
-	player->add<CTransform>(Vec2f(400.0f, 300.0f), Vec2f(0.0f, 0.0f), 0.0f);
+	player->add<CTransform>(Vec2f(400.0f, 400.0f), Vec2f(0.0f, 0.0f), 0.0f);
 	player->add<CShape>(m_playerConfig.SR, m_playerConfig.V,
 		sf::Color(m_playerConfig.FR, m_playerConfig.FG, m_playerConfig.FB),
 		sf::Color(m_playerConfig.OR, m_playerConfig.OG, m_playerConfig.OB),
@@ -120,7 +121,29 @@ void Game::sMovement()
 
 void Game::sLifespan()
 {
+	for (auto& entity : m_entities.getEntities())
+	{
+		if (!entity->has<CLifespan>()) continue;
 
+		auto& entityLifespan = entity->get<CLifespan>();
+		auto& entityShape = entity->get<CShape>();
+
+		sf::Color curFillColor = entityShape.circle.getFillColor();
+		sf::Color curOutlineColor = entityShape.circle.getOutlineColor();
+
+		float lifespanRatio = (float)entityLifespan.remaining / (float)entityLifespan.lifespan;
+		curFillColor.a = lifespanRatio * 255;
+		curOutlineColor.a = lifespanRatio * 255;
+
+		entityShape.circle.setFillColor(curFillColor);
+		entityShape.circle.setOutlineColor(curOutlineColor);
+
+		entityLifespan.remaining--;
+		if (entityLifespan.remaining <= 0)
+		{
+			entity->destroy();
+		}
+	}
 }
 
 void Game::sCollision()
@@ -152,27 +175,6 @@ void Game::sRender()
 		entityShape.circle.setPosition(entityTransform.pos);
 		entityTransform.angle += 1.0f;
 		entityShape.circle.setRotation(sf::degrees(entityTransform.angle));
-
-		if (entity->has<CLifespan>())
-		{
-			auto& entityLifespan = entity->get<CLifespan>();
-
-			sf::Color curFillColor = entityShape.circle.getFillColor();
-			sf::Color curOutlineColor = entityShape.circle.getOutlineColor();
-
-			float lifespanRatio = (float)entityLifespan.remaining / (float)entityLifespan.lifespan;
-			curFillColor.a = lifespanRatio * 255;
-			curOutlineColor.a = lifespanRatio * 255;
-
-			entityShape.circle.setFillColor(curFillColor);
-			entityShape.circle.setOutlineColor(curOutlineColor);
-
-			entityLifespan.remaining--;
-			if (entityLifespan.remaining <= 0)
-			{
-				entity->destroy();
-			}
-		}
 
 		m_window.draw(entityShape.circle);
 	}
