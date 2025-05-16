@@ -97,6 +97,16 @@ public:
 	{
 		return std::sqrt(static_cast<float>(x * x + y * y));
 	}
+	
+	Vec2 normalize() const
+	{
+		float len = length();
+		if (len > 0)
+		{
+			return Vec2(x / len, y / len);
+		}
+		return Vec2(x, y);
+	}
 };
 
 using Vec2f = Vec2<float>;

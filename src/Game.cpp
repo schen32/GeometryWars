@@ -23,7 +23,7 @@ void Game::init(const std::string& path)
 	// int SR, CR, FR, FG, FB, OR, OG, OB, OT, V, L; float S
 	m_bulletConfig = { 6, 6, 250, 250, 250, 250, 250, 250, 2, 12, 100, 10.0f };
 	// int SR, CR, OR, OG, OB, OT, VMIN, VMAX, L, SI; float SMIN, SMAX
-	m_enemyConfig = { 40, 40, 250, 10, 10, 3, 4, 8, 60, 100, 2.0f, 8.0f };
+	m_enemyConfig = { 40, 40, 250, 10, 10, 3, 3, 7, 60, 120, 2.0f, 6.0f };
 
 	spawnPlayer();
 }
@@ -77,8 +77,10 @@ void Game::spawnEnemy()
 	std::mt19937 gen(rd());
 
 	// Create distributions with different names
-	std::uniform_int_distribution<> xDistrib(0, m_windowConfig.uW);
-	std::uniform_int_distribution<> yDistrib(0, m_windowConfig.uH);
+	std::uniform_int_distribution<> xDistrib(m_enemyConfig.SR,
+		m_windowConfig.uW - m_enemyConfig.SR);
+	std::uniform_int_distribution<> yDistrib(m_enemyConfig.SR,
+		m_windowConfig.uH - m_enemyConfig.SR);
 	std::uniform_real_distribution<float> speedDistrib(-m_enemyConfig.SMAX, m_enemyConfig.SMAX);
 	std::uniform_int_distribution<> verticeDistrib(m_enemyConfig.VMIN, m_enemyConfig.VMAX);
 	std::uniform_int_distribution<> colorDistrib(0, 255);
@@ -98,7 +100,29 @@ void Game::spawnEnemy()
 
 void Game::spawnSmallEnemies(std::shared_ptr<Entity> entity)
 {
+	auto& parentTransform = entity->get<CTransform>();
+	auto& parentShape = entity->get<CShape>();
 
+	size_t vertices = parentShape.circle.getPointCount();
+	for (size_t i = 0; i < vertices; i++)
+	{
+		auto enemySmall = m_entities.addEntity("enemySmall");
+
+		float angle = i * (2 * 3.14159 / vertices);
+		Vec2f angleVec = Vec2f(std::cos(angle), std::sin(angle));
+		Vec2f velocity = angleVec * parentTransform.velocity.length();
+
+		enemySmall->add<CTransform>(parentTransform.pos,
+			velocity, 0.0f);
+		enemySmall->add<CShape>(m_enemyConfig.SR / 2, vertices,
+			parentShape.circle.getFillColor(),
+			parentShape.circle.getOutlineColor(),
+			m_enemyConfig.OT);
+		// enemySmall->add<CCollision>(m_enemyConfig.CR / 2);
+		enemySmall->add<CLifespan>(m_enemyConfig.L);
+	}
+
+	entity->destroy();
 }
 
 void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2f& target)
@@ -191,8 +215,24 @@ void Game::sCollision()
 				< (enemyCollision.radius + bulletCollision.radius)
 				* (enemyCollision.radius + bulletCollision.radius))
 			{
-				enemy->destroy();
+				spawnSmallEnemies(enemy);
 				bullet->destroy();
+			}
+		}
+
+		for (auto& otherEnemy : m_entities.getEntities("enemy"))
+		{
+			if (enemy->id() == otherEnemy->id()) continue;
+
+			auto& otherEnemyTransform = otherEnemy->get<CTransform>();
+			auto& otherEnemyCollision = otherEnemy->get<CCollision>();
+
+			if (enemyTransform.pos.distToSquared(otherEnemyTransform.pos)
+				< (enemyCollision.radius + otherEnemyCollision.radius)
+				* (enemyCollision.radius + otherEnemyCollision.radius))
+			{
+				spawnSmallEnemies(enemy);
+				spawnSmallEnemies(otherEnemy);
 			}
 		}
 
@@ -201,7 +241,6 @@ void Game::sCollision()
 			* (enemyCollision.radius + playerCollision.radius))
 		{
 			enemy->destroy();
-			// player()->destroy();
 		}
 
 		if (enemyTransform.pos.x <= enemyCollision.radius ||
