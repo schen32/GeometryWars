@@ -16,7 +16,7 @@ class Game
 
 	EntityManager m_entities;
 	sf::Font m_font;
-	// sf::Text m_text;
+	sf::Text m_text = sf::Text(m_font);
 	PlayerConfig m_playerConfig;
 	EnemyConfig m_enemyConfig;
 	BulletConfig m_bulletConfig;

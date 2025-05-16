@@ -18,6 +18,11 @@ void Game::init(const std::string& path)
 	ImGui::GetStyle().ScaleAllSizes(2.0f);
 	ImGui::GetIO().FontGlobalScale = 2.0f;
 
+	m_font.openFromFile("font/CaviarDreams.ttf");
+	m_text.setCharacterSize(30);
+	m_text.setFillColor(sf::Color::White);
+	m_text.setPosition({ 30.0f, 20.0f });
+
 	// int SR, CR, FR, FG, FB, OR, OG, OB, OT, V; float S
 	m_playerConfig = { 32, 32, 100, 100, 100, 250, 250, 250, 4, 6, 5.0f };
 	// int SR, CR, FR, FG, FB, OR, OG, OB, OT, V, L; float S
@@ -87,16 +92,18 @@ void Game::spawnEnemy()
 	std::uniform_real_distribution<float> speedDistrib(-m_enemyConfig.SMAX, m_enemyConfig.SMAX);
 	std::uniform_int_distribution<> verticeDistrib(m_enemyConfig.VMIN, m_enemyConfig.VMAX);
 	std::uniform_int_distribution<> colorDistrib(0, 255);
+	int vertices = verticeDistrib(gen);
 
 	auto enemy = m_entities.addEntity("enemy");
 
 	enemy->add<CTransform>(Vec2f(xDistrib(gen), yDistrib(gen)),
 		Vec2f(speedDistrib(gen), speedDistrib(gen)), 0.0f);
-	enemy->add<CShape>(m_enemyConfig.SR, verticeDistrib(gen),
+	enemy->add<CShape>(m_enemyConfig.SR, vertices,
 		sf::Color(colorDistrib(gen), colorDistrib(gen), colorDistrib(gen)),
 		sf::Color(m_enemyConfig.OR, m_enemyConfig.OG, m_enemyConfig.OB),
 		m_enemyConfig.OT);
 	enemy->add<CCollision>(m_enemyConfig.CR);
+	enemy->add<CScore>(vertices);
 
 	m_lastEnemySpawnTime = m_currentFrame;
 }
@@ -123,6 +130,7 @@ void Game::spawnSmallEnemies(std::shared_ptr<Entity> entity)
 			m_enemyConfig.OT);
 		enemySmall->add<CCollision>(m_enemyConfig.CR / 2);
 		enemySmall->add<CLifespan>(m_enemyConfig.L);
+		enemySmall->add<CScore>(vertices);
 	}
 
 	entity->destroy();
@@ -216,6 +224,7 @@ void Game::sCollision()
 				< (enemyCollision.radius + bulletCollision.radius)
 				* (enemyCollision.radius + bulletCollision.radius))
 			{
+				m_score += enemy->get<CScore>().score;
 				spawnSmallEnemies(enemy);
 				bullet->destroy();
 			}
@@ -230,6 +239,7 @@ void Game::sCollision()
 				< (enemyCollision.radius + bulletCollision.radius)
 				* (enemyCollision.radius + bulletCollision.radius))
 			{
+				m_score += enemySmall->get<CScore>().score;
 				enemySmall->destroy();
 				bullet->destroy();
 			}
@@ -277,6 +287,7 @@ void Game::sCollision()
 			* (enemyCollision.radius + playerCollision.radius))
 		{
 			enemy->destroy();
+			playerShape.circle.setPointCount(playerShape.circle.getPointCount() - 1);
 		}
 	}
 
@@ -328,6 +339,8 @@ void Game::sRender()
 
 		m_window.draw(entityShape.circle);
 	}
+	m_text.setString("Score: " + std::to_string(m_score));
+	m_window.draw(m_text);
 
 	ImGui::SFML::Render(m_window);
 
