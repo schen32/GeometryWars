@@ -175,17 +175,17 @@ void Game::sLifespan()
 
 void Game::sCollision()
 {
-	auto playerTransform = player()->get<CTransform>();
-	auto playerCollision = player()->get<CCollision>();
+	auto& playerTransform = player()->get<CTransform>();
+	auto& playerCollision = player()->get<CCollision>();
 	for (auto& enemy : m_entities.getEntities("enemy"))
 	{
-		auto enemyTransform = enemy->get<CTransform>();
-		auto enemyCollision = enemy->get<CCollision>();
+		auto& enemyTransform = enemy->get<CTransform>();
+		auto& enemyCollision = enemy->get<CCollision>();
 
 		for (auto& bullet : m_entities.getEntities("bullet"))
 		{
-			auto bulletTransform = bullet->get<CTransform>();
-			auto bulletCollision = bullet->get<CCollision>();
+			auto& bulletTransform = bullet->get<CTransform>();
+			auto& bulletCollision = bullet->get<CCollision>();
 
 			if (enemyTransform.pos.distToSquared(bulletTransform.pos)
 				< (enemyCollision.radius + bulletCollision.radius)
@@ -202,6 +202,17 @@ void Game::sCollision()
 		{
 			enemy->destroy();
 			// player()->destroy();
+		}
+
+		if (enemyTransform.pos.x <= enemyCollision.radius ||
+			enemyTransform.pos.x >= m_windowConfig.fW - enemyCollision.radius)
+		{
+			enemyTransform.velocity.x *= -1;
+		}
+		if (enemyTransform.pos.y <= enemyCollision.radius ||
+			enemyTransform.pos.y >= m_windowConfig.fH - enemyCollision.radius)
+		{
+			enemyTransform.velocity.y *= -1;
 		}
 	}
 }
