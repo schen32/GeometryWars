@@ -319,6 +319,11 @@ void Game::sCollision()
 			entityTransform.velocity.y *= -1;
 		}
 	}
+
+	if (playerShape.circle.getPointCount() < 3)
+	{
+		m_running = false;
+	}
 }
 
 void Game::sEnemySpawner()
@@ -332,7 +337,30 @@ void Game::sEnemySpawner()
 void Game::sGUI()
 {
 	ImGui::Begin("Geometry Wars");
-	ImGui::Text("Stuff Goes Here");
+	
+	if (ImGui::BeginTabBar("MyTabBar"))
+	{
+		if (ImGui::BeginTabItem("Entity"))
+		{
+			if (ImGui::CollapsingHeader("All Entities"))
+			{
+				for (auto& entity : m_entities.getEntities())
+				{
+					ImGui::PushID(entity->id());
+					if (ImGui::Button("Delete"))
+					{
+						entity->destroy();
+					}
+					ImGui::SameLine();
+					ImGui::Text("%d %s", entity->id(), entity->tag().c_str());
+					ImGui::PopID();
+				}
+			}
+			ImGui::EndTabItem();
+		}
+		ImGui::EndTabBar();
+	}
+
 	ImGui::End();
 }
 
